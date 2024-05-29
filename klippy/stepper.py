@@ -82,6 +82,11 @@ class MCU_stepper:
             self._step_both_edge = True
             self._step_pulse_duration = 0.
             invert_step = -1
+
+        # TODO: This needs to be removed, it's a temporary solution to a problem in my external drivers.
+        self._step_pulse_duration = 0.
+        invert_step = -1
+
         step_pulse_ticks = self._mcu.seconds_to_clock(self._step_pulse_duration)
         self._mcu.add_config_cmd(
             "config_stepper oid=%d step_pin=%s dir_pin=%s invert_step=%d"
