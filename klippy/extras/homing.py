@@ -74,6 +74,7 @@ class HomingMove:
         kin = self.toolhead.get_kinematics()
         kin_spos = {s.get_name(): s.get_commanded_position()
                     for s in kin.get_steppers()}
+        # This is because I need the endstops passed
         self.stepper_positions = [ StepperPosition(s, name)
                                    for es, name in self.endstops
                                    for s in es.get_steppers() ]
@@ -86,6 +87,7 @@ class HomingMove:
                                           ENDSTOP_SAMPLE_COUNT, rest_time,
                                           triggered=triggered)
             endstop_triggers.append(wait)
+            break
         all_endstop_trigger = multi_complete(self.printer, endstop_triggers)
         self.toolhead.dwell(HOMING_START_DELAY)
         # Issue move
@@ -94,11 +96,14 @@ class HomingMove:
             self.toolhead.drip_move(movepos, speed, all_endstop_trigger)
         except self.printer.command_error as e:
             error = "Error during homing move: %s" % (str(e),)
-        # Wait for endstops to trigger
         trigger_times = {}
         move_end_print_time = self.toolhead.get_last_move_time()
+        if self.endstops:
+            first_mcu_endstop, first_name = self.endstops[0]
+            trigger_time = first_mcu_endstop.home_wait(move_end_print_time)
+        else:
+            trigger_time = None
         for mcu_endstop, name in self.endstops:
-            trigger_time = mcu_endstop.home_wait(move_end_print_time)
             if trigger_time > 0.:
                 trigger_times[name] = trigger_time
             elif trigger_time < 0. and error is None:
@@ -140,9 +145,15 @@ class HomingMove:
     def check_no_movement(self):
         if self.printer.get_start_args().get('debuginput') is not None:
             return None
+        any_movement = False
         for sp in self.stepper_positions:
-            if sp.start_pos == sp.trig_pos:
-                return sp.endstop_name
+            if sp.start_pos != sp.trig_pos:
+                any_movement = True
+                break
+        if not any_movement:
+            for sp in self.stepper_positions:
+                if sp.start_pos == sp.trig_pos:
+                    return sp.endstop_name
         return None
 
 # State tracking of homing requests
@@ -239,8 +250,14 @@ class PrinterHoming:
                 raise self.printer.command_error(
                     "Homing failed due to printer shutdown")
             raise
-    def probing_move(self, mcu_probe, pos, speed):
+    def probing_move(self, mcu_probe, pos, speed, axis):
         endstops = [(mcu_probe, "probe")]
+
+        toolhead = self.printer.lookup_object('toolhead')
+        kinematics = toolhead.get_kinematics()
+        rail_endstops = kinematics.get_endstops_by_rail_name('stepper_' + axis)
+        endstops.extend(rail_endstops)
+
         hmove = HomingMove(self.printer, endstops)
         try:
             epos = hmove.homing_move(pos, speed, probe_pos=True)

@@ -104,5 +104,13 @@ class CoreXYRotABKinematics:
             'axis_maximum': self.axes_max,
         }
 
+    def get_endstops_by_rail_name(self, rail_name):
+        logging.info("Available rail names:")
+        for rail in self.rails + self.rotors:
+            logging.info("Rail name: %s", rail.get_name())
+            if rail.get_name() == rail_name:
+                return rail.get_endstops()
+        return []
+
 def load_kinematics(toolhead, config):
     return CoreXYRotABKinematics(toolhead, config)

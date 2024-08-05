@@ -252,16 +252,16 @@ class GCodeMove:
                             for s in steppers])
         cinfo = [(s.get_name(), s.get_commanded_position()) for s in steppers]
         stepper_pos = " ".join(["%s:%.6f" % (a, v) for a, v in cinfo])
-        kinfo = zip("XYZ", kin.calc_position(dict(cinfo)))
+        kinfo = zip("XYZAB", kin.calc_position(dict(cinfo)))
         kin_pos = " ".join(["%s:%.6f" % (a, v) for a, v in kinfo])
         toolhead_pos = " ".join(["%s:%.6f" % (a, v) for a, v in zip(
-            "XYZE", toolhead.get_position())])
+            "XYZABE", toolhead.get_position())])
         gcode_pos = " ".join(["%s:%.6f"  % (a, v)
-                              for a, v in zip("XYZE", self.last_position)])
+                              for a, v in zip("XYZABE", self.last_position)])
         base_pos = " ".join(["%s:%.6f"  % (a, v)
-                             for a, v in zip("XYZE", self.base_position)])
+                             for a, v in zip("XYZABE", self.base_position)])
         homing_pos = " ".join(["%s:%.6f"  % (a, v)
-                               for a, v in zip("XYZ", self.homing_position)])
+                               for a, v in zip("XYZAB", self.homing_position)])
         gcmd.respond_info("mcu: %s\n"
                           "stepper: %s\n"
                           "kinematic: %s\n"

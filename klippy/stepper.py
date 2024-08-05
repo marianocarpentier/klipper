@@ -84,7 +84,6 @@ class MCU_stepper:
             invert_step = -1
 
         # TODO: This needs to be removed, it's a temporary solution to a problem in my external drivers.
-        self._step_pulse_duration = 0.
         invert_step = -1
 
         step_pulse_ticks = self._mcu.seconds_to_clock(self._step_pulse_duration)
